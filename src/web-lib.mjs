@@ -110,6 +110,17 @@ class HTTPServer {
         const req = new Request(binaryData.toString());
         const res = new Response(sock);
         const reqPathFull = path.join(this.rootDirFull, req.path);
+        if (Object.hasOwn(this.redirectMap, req.path)){
+            console.log("here");
+            res.status(308);
+            res.setHeader('Location', this.redirectMap[req.path]);
+            res.setHeader('Content-Type', getMIMEType(req.path));
+            res.send();
+            this.handleConnection(sock);
+        }else{
+            res.status(404);
+            res.send("Page not found");
+        }
 
         // TODO: (see homework specification for details)
         // 0. implementation can start here, but other classes / methods can be modified or added

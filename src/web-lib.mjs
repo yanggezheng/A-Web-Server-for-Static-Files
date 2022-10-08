@@ -120,6 +120,7 @@ class HTTPServer {
             fs.access(reqPathFull, fs.constants.F_OK, (err) => {
                 if(err) {
                     res.status(404);
+                    res.setHeader("Content-Type", "text/plain");
                     res.send("Page Not Found");
                 } else {
                     fs.stat(reqPathFull, (err, stats) => {
@@ -136,7 +137,7 @@ class HTTPServer {
                                         const rendered = markdown.render(data);
                                         res.send(rendered);
                                     }
-                                })
+                                });
                             }else{
                                 fs.readFile(reqPathFull,(err, data)=>{
                                     if (err) {
@@ -148,7 +149,7 @@ class HTTPServer {
                                     }
                                 });
                             }
-                        }else{
+                        }else if (isDirectory){
                             fs.readdir(reqPathFull, {withFileTypes: true}, (err, files) => {
                                 if(err) {
                                     res.status(500);
@@ -159,9 +160,9 @@ class HTTPServer {
                                         if (f.isDirectory()){
                                             html += `<p><a href = "${path.join(req.path,f.name)}/">${f.name}</a></p>`;
                                         }else{
-                                            html += `<p><a href = "${path.join(req.path,f.name)}">${f.name}</a></p>`
+                                            html += `<p><a href = "${path.join(req.path,f.name)}">${f.name}</a></p>`;
                                         }
-                                    })
+                                    });
                                     res.send(html);
                                 }
                                });

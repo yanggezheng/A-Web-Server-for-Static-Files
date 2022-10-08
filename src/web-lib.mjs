@@ -118,7 +118,7 @@ class HTTPServer {
             this.handleConnection(sock);
         }else{
             fs.access(reqPathFull, fs.constants.F_OK, (err) => {
-                if(err) {
+                if(err||req.path.includes('..')) {
                     res.status(404);
                     res.setHeader("Content-Type", "text/plain");
                     res.send("Page Not Found");

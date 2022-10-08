@@ -111,16 +111,68 @@ class HTTPServer {
         const res = new Response(sock);
         const reqPathFull = path.join(this.rootDirFull, req.path);
         if (Object.hasOwn(this.redirectMap, req.path)){
-            console.log("here");
             res.status(308);
             res.setHeader('Location', this.redirectMap[req.path]);
             res.setHeader('Content-Type', getMIMEType(req.path));
             res.send();
             this.handleConnection(sock);
         }else{
-            res.status(404);
-            res.send("Page not found");
+            fs.access(reqPathFull, fs.constants.F_OK, (err) => {
+                if(err) {
+                    res.status(404);
+                    res.send("Page Not Found");
+                } else {
+                    fs.stat(reqPathFull, (err, stats) => {
+                        const isDirectory = stats.isDirectory(); 
+                        const isFile = stats.isFile();
+                        if (isFile){
+                            if (getExtension(reqPathFull) === "md"){
+                                fs.readFile(reqPathFull, "utf-8", (err, data) =>{
+                                    if (err) {
+                                        res.status(500);
+                                        res.send("Error reading file");
+                                    }else{
+                                        const markdown = MarkdownIt({html: true});
+                                        const rendered = markdown.render(data);
+                                        res.send(rendered);
+                                    }
+                                })
+                            }else{
+                                fs.readFile(reqPathFull,(err, data)=>{
+                                    if (err) {
+                                        res.status(500);
+                                        res.send();
+                                    }else{
+                                        res.setHeader("Content-Type", getExtension(reqPathFull));
+                                        res.send(data);
+                                    }
+                                });
+                            }
+                        }else{
+                            fs.readdir(reqPathFull, {withFileTypes: true}, (err, files) => {
+                                if(err) {
+                                    res.status(500);
+                                    res.send("error reading dir");
+                                } else {
+                                    let html = "";
+                                    files.forEach(f => {
+                                        if (f.isDirectory()){
+                                            html += `<p><a href = "${path.join(req.path,f.name)}/">${f.name}</a></p>`;
+                                        }else{
+                                            html += `<p><a href = "${path.join(req.path,f.name)}">${f.name}</a></p>`
+                                        }
+                                    })
+                                    res.send(html);
+                                }
+                               });
+                        }
+                    });
+                    
+                    
+                }
+            });
         }
+
 
         // TODO: (see homework specification for details)
         // 0. implementation can start here, but other classes / methods can be modified or added
